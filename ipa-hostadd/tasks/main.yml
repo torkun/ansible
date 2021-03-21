@@ -1,0 +1,28 @@
+---
+- name: Ipa host add and generate a random password for bulk enrolment
+  become: true
+  community.general.ipa_host:
+    name: "{{ansible_hostname}}.somedomain" 
+    description: Example host
+    state: present
+    ipa_host: some.server
+    ipa_user: admin
+    ipa_pass: usevaultkey
+    validate_certs: False
+    random_password: True
+  register: outrp
+- debug: 
+    msg: "{{ outrp.host.randompassword }}"
+
+- name: Copy ipaenroll script
+  become: true
+  template: 
+    src: 'ipaenroll.j2' 
+    dest: '/tmp/ipaenroll.sh'
+
+- name: Execute ipaenroll script
+  become: true
+  command: sh /tmp/ipaenroll.sh
+  register: ipaenrollout
+- debug:
+    msg: "{{ ipaenrollout.stderr_lines | last }}"

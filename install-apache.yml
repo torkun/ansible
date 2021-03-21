@@ -1,0 +1,6 @@
+---
+- hosts: '{{ hostname_var }} ' 
+  gather_facts: yes
+  become: yes
+  roles:
+    - deploy-apache

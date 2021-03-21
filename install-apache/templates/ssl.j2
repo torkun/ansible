@@ -1,0 +1,27 @@
+Listen {{ansible_hostname}}.somedomain:443
+<VirtualHost {{ansible_hostname}}.somedomain:443>
+ServerName {{ ansible_hostname | regex_replace('[^A-Za-z]','') }}.somedomain
+ErrorLog logs/{{ ansible_hostname | regex_replace('web', '') | regex_replace('[^A-Za-z]','') }}_ssl_error_log
+TransferLog logs/{{ ansible_hostname | regex_replace('web', '') | regex_replace('[^A-Za-z]','') }}_ssl_access_log
+LogLevel info
+CustomLog logs/{{ ansible_hostname | regex_replace('web', '') | regex_replace('[^A-Za-z]','') }}_ssl_access_log common
+CustomLog logs/{{ ansible_hostname | regex_replace('web', '') | regex_replace('[^A-Za-z]','') }}_request_log "%t %h %{SSL_PROTOCOL}x %{SSL_CIPHER}x \"%r\" %b Time:%D \"%{User-agent}i\""
+SSLEngine on
+SSLProtocol ALL -SSLv2 -SSLv3 -TLSv1
+SSLHonorCipherOrder on
+SSLCipherSuite someCiphers
+SSLCertificateFile conf.d/certs/somecert.crt
+SSLCertificateKeyFile conf.d/certs/some.key
+SSLCertificateChainFile conf.d/certs/someroot.crt
+
+someconf
+    
+SetEnvIf someSetenv
+
+RedirectMatch ^/$ https://some.domain/{{ ansible_hostname | regex_replace('web', '') | regex_replace('[^A-Za-z]','') }}/webpage.html
+
+ProxyPass        /{{ ansible_hostname | regex_replace('web', '') | regex_replace('[^A-Za-z]','') }}/  http://somedirection/{{ ansible_hostname | regex_replace('web', '') | regex_replace('[^A-Za-z]','') }}/
+ProxyPassReverse /{{ ansible_hostname | regex_replace('web', '') | regex_replace('[^A-Za-z]','') }}/  http://somedirection/{{ ansible_hostname | regex_replace('web', '') | regex_replace('[^A-Za-z]','') }}/
+
+Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+</VirtualHost>

@@ -1,0 +1,49 @@
+#! /bin/bash
+# Comment out VirtualHost and Listen lines in ssl.conf file
+
+# Check if comment out proccess done before
+grep -n "^#<VirtualHost" /etc/httpd/conf.d/ssl.conf
+result=$?
+
+if [[ $result -eq 0 ]]; then
+  echo Comment out operation done before for VirtualHost please check ssl.conf file
+  exit 0
+fi
+
+grep -n "^#Listen 443" /etc/httpd/conf.d/ssl.conf
+result=$?
+
+if [[ $result -eq 0 ]]; then
+  echo Comment out operation done before for Listen 443 please check ssl.conf file
+  exit 0
+fi
+
+# Grep linenumbers between Virtualhost block
+export linenumber=$(grep -n "^<VirtualHost" /etc/httpd/conf.d/ssl.conf | cut -d: -f 1)
+export linenumber=$linenumber,$(grep -n "^</VirtualHost" /etc/httpd/conf.d/ssl.conf | cut -d: -f 1)
+
+# Check if linenumber variable is in correct format, (otherwise sed will comment out all of the lines) and comment out these lines
+if [[ $linenumber =~ ^[0-9]+([,][0-9]+)$ ]] ; then
+
+    sed -i  "${linenumber}s/^/#/g" /etc/httpd/conf.d/ssl.conf
+
+else
+    echo  "Cannot find VirtualHost lines or it is already commented out!" >&2
+    exit 1
+fi
+
+# Grep linenumber of "Listen 443" sting
+export linenumberlsn=$(grep -n "^Listen 443" /etc/httpd/conf.d/ssl.conf | cut -d: -f 1)
+
+# Check if the linenumberlsn variable is in correct format, (otherwise sed will comment out all of the lines) and comment out this line.
+if [[ $linenumberlsn =~ ^[0-9]+$ ]] ; then
+    
+    sed -i  "${linenumberlsn}s/^/#/g" /etc/httpd/conf.d/ssl.conf
+
+else 
+    echo  "Cannot find Listen 443 line or it is already commented out!" >&2
+    exit 1
+fi
+
+echo Comment out successfull
+exit

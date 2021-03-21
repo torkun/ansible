@@ -1,0 +1,11 @@
+---
+- include: ./ipa-hostadd/files/delete_host.yml
+  vars: 
+    hostname_var: somehost
+
+- hosts: '{{hostname_var}}'
+  gather_facts: yes
+  roles:
+    - deploy-ipa-hostadd
+  vars: 
+    hostname_var: somehost

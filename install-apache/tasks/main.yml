@@ -1,0 +1,60 @@
+---
+# tasks file for deploy-apache
+ - name: Link httpd log folder
+   file:
+     src: /data/logs/httpd
+     dest: /var/log/httpd
+     state: link
+
+ - name: Install Apache
+   yum:
+     name: httpd-2.4.6-97.el7.centos 
+     state: present    
+   notify: restart apache
+
+ - name: Enable Apache service
+   service: 
+     name: httpd
+     enabled: true
+
+ - name: Install mod_ssl
+   yum:
+     name: mod_ssl-2.4.6-97.el7.centos 
+     state: present    
+   notify: restart apache
+
+ - name: Create self signed cert folder
+   file: 
+     path: /etc/httpd/conf.d/certs
+     state: directory
+
+ - name: Copy sslconf, self signed certificates, ssl_cmd_out script
+   template: 
+     src: '{{ item.src }}' 
+     dest: '{{ item.dest}}'
+   with_items:
+     - { src: 'ssl.j2', dest: "/etc/httpd/conf.d/ssl{{ ansible_hostname | regex_replace('web', '') | regex_replace('[^A-Za-z]','') }}.conf" } 
+     - { src: 'security.j2', dest: "/etc/httpd/conf.d/security{{ ansible_hostname | regex_replace('web', '') | regex_replace('[^A-Za-z]','') }}.conf" }
+     - { src: 'someroot.crt.j2', dest: '/etc/httpd/conf.d/certs/someroot.crt' } 
+     - { src: 'somecert.crt.j2', dest: '/etc/httpd/conf.d/certs/somecert.crt' } 
+     - { src: 'some.key.j2', dest: '/etc/httpd/conf.d/certs/some.key' }
+     - { src: 'ssl_cmd_out.j2', dest: '/tmp/ssl_cmd_out.sh' }
+   notify: restart apache
+ 
+ - name: Execute ssl_cmd_out.sh script
+   become: true
+   command: sh /tmp/ssl_cmd_out.sh
+   register: ssl_cmd_out
+   changed_when: "'Comment out successfull' in ssl_cmd_out.stdout" 
+   notify: restart apache
+ - debug:
+     msg: "{{ ssl_cmd_out.stdout }}"         
+
+ - name: check if SeLinux is not running
+   command: getenforce
+   register: sestatus
+   changed_when: false
+ - fail:
+     msg: Please disable SeLinux
+   when: "'Enforcing' in sestatus.stdout"
+   ignore_errors: true

@@ -1,0 +1,32 @@
+---
+- hosts: targethost
+  become: true
+  vars:
+    hostname_var: somehost
+  tasks:
+    - name: Grep known_hosts parameter of "{{hostname_var}}"
+      command: grep "{{hostname_var}}" /home/someuser/.ssh/known_hosts
+      register: old_key
+      ignore_errors: true
+    - debug:
+        msg: '{{ old_key.stdout }}'
+
+    - name: Get the local user running this playbook and delete old, add new server to known_hosts file
+      become: false
+      local_action: shell ssh-keygen -R {{hostname_var}}
+      local_action: shell ssh-keyscan {{hostname_var}} >> /home/{{ lookup('env','USER') }}/.ssh/known_hosts
+#      register: local_user
+    - name: delete known_hosts parameter of "{{hostname_var}}" from targethost
+      known_hosts:
+        name: "{{hostname_var}}"
+        key: "{{ old_key.stdout }}"
+        path: /home/{{ item }}/.ssh/known_hosts
+        state: absent
+      loop:
+        - "{{ lookup('env','USER') }}"
+        - someuser
+    - name: Add new key to targethost's known_hosts file
+      shell: ssh-keyscan '{{hostname_var}}' >> /home/"{{ item }}"/.ssh/known_hosts
+      loop:
+        - "{{ lookup('env','USER') }}"
+        - someuser
