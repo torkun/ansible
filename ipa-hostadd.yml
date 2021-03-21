@@ -6,6 +6,6 @@
 - hosts: '{{hostname_var}}'
   gather_facts: yes
   roles:
-    - deploy-ipa-hostadd
+    - ipa-hostadd
   vars: 
     hostname_var: somehost
